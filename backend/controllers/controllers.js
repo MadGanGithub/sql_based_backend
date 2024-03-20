@@ -1,5 +1,7 @@
+import { Sequelize } from "sequelize";
 import StockData from "../models/stock.js";
 import User from "../models/user.js";
+
 
 //Signin
 const testApi = async (req, res) => {
@@ -43,19 +45,37 @@ const fetchData = async (req, res) => {
 
 const fetchSpecificData = async (req, res) => {
   try {
-    console.log(req.query)
+    // console.log(req.query)
     const columns = req.query.column.split(',');
     console.log(columns)
-    console.log(typeof(columns))
-    const users = await StockData.findAll({
+    var col=[]
+    for(var i=0;i<columns.length;i++){
+      col.push(columns[i])
+    }
+    // console.log(typeof(columns))
+    // const users = await StockData.findAll();
+    
+    // console.log(users)
+
+    const one = await StockData.findAll({
       where: { ticker: req.query.ticker },
-      attributes: ['ticker', 'revenue', 'gp'] // Specify the columns you want to fetch
+      attributes: [...col]
     });
     
-    console.log(users)
+    console.log(one)
+
+    // const users=await StockData.create({
+    //   ticker: 'AAPL', // Example ticker symbol
+    //   date: '2022-04-01', // Example date
+    //   revenue: 1000000, // Example revenue
+    //   gp: 500000, // Example gp
+    //   fcf: 200000, // Example fcf
+    //   capex: 100000 // Example capex
+    // });
+
     res.status(200).send({
       status: true,
-      message: users,
+      message: one,
       logged: true,
 
     });
@@ -67,31 +87,48 @@ const fetchSpecificData = async (req, res) => {
   }
 };
 
+function parseDates(date){
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString() // Month is zero-based
+  const year = date.getFullYear().toString();
+
+  const formattedDate = `${month}/${day}/${year}`;
+  console.log(formattedDate)
+  return formattedDate;
+}
+
 const fetchSpecificDataByPeriod = async (req, res) => {
   try {
     const columns = req.query.column.split(',');
-    const periodYears = parseInt(req.query.period); // Parse period as integer
+    const timeperiod = parseInt(req.query.period);
+    let dateCondition = {}
+    var col = []
 
-    // Calculate the date X years ago from the current date
+    if (columns) {
+      for (var i = 0; i < columns.length; i++) {
+        col.push(columns[i])
+      }
+    }
+
     const currentDate = new Date();
     const startDate = new Date(currentDate);
-    startDate.setFullYear(currentDate.getFullYear() - periodYears);
 
-    console.log(currentDate)
-    console.log(startDate)
-
-    // Fetch data between startDate and currentDate
-    const users = await StockData.findAll({
-      where: { 
-        ticker: req.query.ticker,
+    if (timeperiod) {
+      startDate.setFullYear(currentDate.getFullYear() - timeperiod);
+      dateCondition = {
         date: {
-          [Sequelize.Op.between]: [startDate, currentDate]
+          [Sequelize.Op.between]: [parseDates(startDate), parseDates(currentDate)]
         }
-      },
-      attributes: columns // Use the columns specified in the query
-    });
+      };
+    }
 
-    console.log(users)
+    const users = await StockData.findAll({
+      where: {
+        ticker: req.query.ticker,
+        ...dateCondition
+      },
+      attributes: ['ticker', 'date', ...col]
+    });
 
     res.status(200).send({
       success: true,

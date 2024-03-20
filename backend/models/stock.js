@@ -1,6 +1,6 @@
 import { Sequelize,DataTypes } from "sequelize";
 
-const sequelize = new Sequelize('test', 'root', 'password', {
+const sequelize = new Sequelize('data', 'root', 'password', {
     host: 'localhost',
     dialect: 'mysql'
 });
@@ -10,10 +10,12 @@ const StockData = sequelize.define('Stock', {
     ticker: {
         type: DataTypes.TEXT,
         allowNull: false,
+        primaryKey: true,
     },
     date: {
         type: DataTypes.TEXT,
         allowNull: false,
+        primaryKey: true,
     },
     revenue: {
         type: DataTypes.INTEGER,
@@ -41,5 +43,5 @@ const StockData = sequelize.define('Stock', {
 
 sequelize.sync();
 
-// Export the model for use in other modules
+
 export default StockData;
